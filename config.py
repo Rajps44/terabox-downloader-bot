@@ -6,7 +6,7 @@ BOT_TOKEN = "7478730845:AAELg_8E4AXbQnu6t6MiGtrAXG1dOxGpze8"  # bot token
 
 # REDIS
 HOST = "localhost"  # redis host uri
-PORT = 8080  # redis port
+PORT = 6379  # redis port
 PASSWORD = ""  # redis password
 
 PRIVATE_CHAT_ID = -1002192763590  # CHAT WHERE YOU WANT TO STORE VIDEOS
