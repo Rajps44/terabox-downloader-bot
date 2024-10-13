@@ -4,10 +4,9 @@ import sys
 import threading
 import typing
 from typing import Any
+from urllib.parse import urlparse
 
 from redis import Redis as r
-
-from config import HOST, PASSWORD, PORT
 
 log = logging.getLogger("telethon")
 
@@ -24,29 +23,41 @@ class Redis(r):
         decode_responses=True,
         **kwargs,
     ):
-        if ":" in host:
-            data = host.split(":")
-            host = data[0]
-            port = int(data[1])
+        # Check for REDIS_URL
+        redis_url = os.getenv("REDIS_URL")
+        if redis_url:
+            parsed_url = urlparse(redis_url)
+            host = parsed_url.hostname
+            port = parsed_url.port
+            password = parsed_url.password
+        else:
+            # Fallback to provided host, port, and password
+            if ":" in host:
+                data = host.split(":")
+                host = data[0]
+                port = int(data[1])
+
+            if not host or not port:
+                logger.error("Port Number not found")
+                sys.exit()
+
         if host.startswith("http"):
             logger.error("Your REDIS_URI should not start with http!")
             sys.exit()
-        elif not host or not port:
-            logger.error("Port Number not found")
-            sys.exit()
+
+        # Assign kwargs for Redis connection
         kwargs["host"] = host
-        if password and len(password) > 1:
-            kwargs["password"] = password
         kwargs["port"] = port
+        kwargs["password"] = password if password and len(password) > 1 else None
         kwargs["encoding"] = encoding
         kwargs["decode_responses"] = decode_responses
-        # kwargs['client_name'] = client_name
-        # kwargs['username'] = username
+
         try:
             super().__init__(**kwargs)
         except Exception as e:
             logger.exception(f"Error while connecting to redis: {e}")
             sys.exit()
+        
         self.logger = logger
         self._cache = {}
         threading.Thread(target=self.re_cache).start()
@@ -75,13 +86,13 @@ class Redis(r):
         return self.set(key, value)
 
 
+# Initialize Redis
 db = Redis(
-    host=HOST,
-    port=PORT,
-    password=PASSWORD if len(PASSWORD) > 1 else None,
+    host=os.getenv("HOST", HOST), # Use env variable or fallback
+    port=os.getenv("PORT", PORT),
+    password=os.getenv("PASSWORD", PASSWORD) if len(PASSWORD) > 1 else None,
     decode_responses=True,
 )
-
 
 log.info(f"Starting redis on {HOST}:{PORT}")
 if not db.ping():
