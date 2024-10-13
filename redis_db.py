@@ -8,6 +8,9 @@ from urllib.parse import urlparse
 
 from redis import Redis as r
 
+# Importing configurations from config
+from config import HOST, PORT, PASSWORD
+
 log = logging.getLogger("telethon")
 
 
@@ -88,13 +91,13 @@ class Redis(r):
 
 # Initialize Redis
 db = Redis(
-    host=os.getenv("HOST", HOST), # Use env variable or fallback
-    port=os.getenv("PORT", PORT),
+    host=os.getenv("HOST", HOST),  # Use env variable or fallback
+    port=int(os.getenv("PORT", PORT)),
     password=os.getenv("PASSWORD", PASSWORD) if len(PASSWORD) > 1 else None,
     decode_responses=True,
 )
 
-log.info(f"Starting redis on {HOST}:{PORT}")
+log.info(f"Starting redis on {db.connection_pool.connection_kwargs['host']}:{db.connection_pool.connection_kwargs['port']}")
 if not db.ping():
-    log.error(f"Redis is not available on {HOST}:{PORT}")
+    log.error("Redis is not available")
     exit(1)
